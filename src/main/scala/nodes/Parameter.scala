@@ -11,3 +11,9 @@ case class Parameter(id: BigInt) extends SExpr {
 }
 
 case class ParameterData(function: FuncDef)
+
+case class CreateParameter(id: Parameter, delta: ParameterData) extends Delta
+
+case class UpdateParameter(id: Parameter, delta: ParameterData) extends Delta
+
+case class DeleteParameter(id: Parameter) extends Delta

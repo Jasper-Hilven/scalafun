@@ -1,7 +1,6 @@
 package nodes
 
 
-
 case class Namespace(id: BigInt) extends ScopeContainer {
   def updateNs(struct: Struct, updateF: NamespaceData => NamespaceData): Struct =
     struct.copy(namespaces = struct.namespaces + (this -> updateF(struct.namespaces(this))))
@@ -13,3 +12,10 @@ case class Namespace(id: BigInt) extends ScopeContainer {
 
 case class NamespaceData(namespaceChildren: Set[Namespace],
                          parentNamespace: Namespace)
+
+case class CreateNamespace(id: Namespace, delta: NamespaceData) extends Delta
+
+case class UpdateNamespace(id: Namespace, delta: NamespaceData) extends Delta
+
+case class DeleteNamespace(id: Namespace) extends Delta
+

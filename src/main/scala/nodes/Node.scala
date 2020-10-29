@@ -21,3 +21,10 @@ case class NodeData(name: String)
 trait NodeDataBuild {
   def create(id: Node): NodeData
 }
+
+
+case class CreateNode(id: Node, delta: NodeData) extends Delta
+
+case class UpdateNode(id: Node, delta: NodeData) extends Delta
+
+case class DeleteNode(id: Node) extends Delta

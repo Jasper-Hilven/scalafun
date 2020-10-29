@@ -35,3 +35,8 @@ case class FuncDefData(parameters: List[Parameter],
                        functionResult: SExpr)
 
 
+case class CreateFuncDef(id: FuncDef, delta: FuncDefData) extends Delta
+
+case class UpdateFuncDef(id: FuncDef, delta: FuncDefData) extends Delta
+
+case class DeleteFuncDef(id: FuncDef) extends Delta

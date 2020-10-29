@@ -33,4 +33,8 @@ case class FuncCallData(argumentMap: List[SExpr])
 case class ArgumentUsage(funccall: FuncCall, position: Int)
 
 
+case class CreateFuncCall(id: FuncCall, delta: FuncCallData) extends Delta
 
+case class UpdateFuncCall(id: FuncCall, delta: FuncCallData) extends Delta
+
+case class DeleteFuncCall(id: FuncCall) extends Delta

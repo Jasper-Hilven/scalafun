@@ -1,0 +1,3 @@
+package nodes
+
+trait Delta {}

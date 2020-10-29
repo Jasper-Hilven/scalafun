@@ -13,8 +13,9 @@ trait SExpr extends Node {
     struct.copy(sexprs = struct.sexprs + (this -> update(struct.sexprs(this))))
 
   def replaceAllUsagesWith(struct: Struct, newToUse: SExpr): Struct = {
-    val u0: Struct = getFunctionResultUsages(struct).foldLeft(struct, (acc: Struct, funcresUs: FuncDef) => funcresUs.replaceResult(acc, newToUse))
-    getArgumentUsages(u0).foldLeft(u0, (acc: Struct, argUs: ArgumentUsage) => argUs.funccall.replaceArgumentAt(acc, argUs.position, newToUse))
+    val resultUsages: Set[FuncDef] = getFunctionResultUsages(struct)
+    val u0: Struct = resultUsages.foldLeft(struct)((acc: Struct, funcresUs: FuncDef) => funcresUs.replaceResult(acc, newToUse))
+    getArgumentUsages(u0).foldLeft(u0)((acc: Struct, argUs: ArgumentUsage) => argUs.funccall.replaceArgumentAt(acc, argUs.position, newToUse))
   }
 
   def replaceWithDirectFunctionCall(struct: Struct) {
@@ -25,9 +26,14 @@ trait SExpr extends Node {
     val u3 = replaceAllUsagesWith(u2, funccall)
     function.setResult(u3, this)
   }
-
 }
 
 case class SExprData(parentScope: ScopeContainer,
                      usedAsArgument: Set[ArgumentUsage],
                      usedAsFunctionResult: Set[FuncDef])
+
+case class CreateSExpr(id: SExpr, delta: SExprData) extends Delta
+
+case class UpdateSExpr(id: SExpr, delta: SExprData) extends Delta
+
+case class DeleteSExpr(id: SExpr) extends Delta

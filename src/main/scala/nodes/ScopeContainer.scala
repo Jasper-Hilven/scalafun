@@ -20,3 +20,10 @@ trait ScopeContainer extends Node {
 }
 
 case class ScopeContainerData(scopeChildren: Set[SExpr])
+
+
+case class CreateScopeContainer(id: ScopeContainer, delta: ScopeContainerData) extends Delta
+
+case class UpdateScopeContainer(id: ScopeContainer, delta: ScopeContainerData) extends Delta
+
+case class DeleteScopeContainer(id: ScopeContainer) extends Delta

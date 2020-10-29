@@ -1,8 +1,9 @@
 package nodes
 
+import types.TypeConstraint
+
 case class Struct(
                    next: BigInt,
-                   holes: Set[BigInt],
                    funccalls: Map[FuncCall, FuncCallData],
                    funcdefs: Map[FuncDef, FuncDefData],
                    scopecontainers: Map[ScopeContainer, ScopeContainerData],
@@ -10,10 +11,12 @@ case class Struct(
                    namespaces: Map[Namespace, NamespaceData],
                    nodes: Map[Node, NodeData],
                    parameters: Map[Parameter, ParameterData],
-                   sexprs: Map[SExpr, SExprData]) {
+                   sexprs: Map[SExpr, SExprData],
+                   baseFuncs: Map[BaseFunc, BaseFuncData],
+                   deltaMap: Map[BigInt, Delta]) {
 
   def this() = {
-    this(0, Set(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
+    this(0, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
   }
 
   def getAll() = nodes.keys;
@@ -68,10 +71,16 @@ case class Struct(
     (addEmptySExprData(fd).copy(parameters = parameters + (fd -> ParameterData(null))), fd)
   }
 
-  def addEmptyConstant(): (Struct, Constant) = {
+  def addConstant(value: ConstantValue): (Struct, Constant) = {
     val fd = new Constant(next)
-    (addEmptySExprData(fd).copy(constants = constants + (fd -> ConstantData(null))), fd)
+    (addEmptySExprData(fd).copy(constants = constants + (fd -> ConstantData(value))), fd)
   }
+
+  def addBaseFunc(parameters: List[Parameter], types: TypeConstraint) = {
+    val bf = new BaseFunc(next)
+    (addEmptySExprData(bf).copy(baseFuncs = baseFuncs + (bf -> BaseFuncData(parameters, types))), bf)
+  }
+
 }
 
 
