@@ -9,8 +9,7 @@ trait SExpr extends Node {
 
   def getFunctionResultUsages(struct: Struct): Set[FuncDef] = struct.sexprs(this).usedAsFunctionResult;
 
-  def updateSExpr(struct: Struct, update: SExprData => SExprData): Struct =
-    struct.copy(sexprs = struct.sexprs + (this -> update(struct.sexprs(this))))
+  def updateSExpr(struct: Struct, update: SExprData => SExprData): Struct = struct.updateSExpr(this, update)
 
   def replaceAllUsagesWith(struct: Struct, newToUse: SExpr): Struct = {
     val resultUsages: Set[FuncDef] = getFunctionResultUsages(struct)

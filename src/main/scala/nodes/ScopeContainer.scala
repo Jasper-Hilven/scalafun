@@ -16,7 +16,7 @@ trait ScopeContainer extends Node {
   }
 
   def updateScopeCont(struct: Struct, update: ScopeContainerData => ScopeContainerData) =
-    struct.copy(scopecontainers = struct.scopecontainers + (this -> update(struct.scopecontainers(this))))
+    struct.updateScopeCont(this, update)
 }
 
 case class ScopeContainerData(scopeChildren: Set[SExpr])

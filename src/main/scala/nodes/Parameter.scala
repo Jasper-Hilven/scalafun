@@ -3,7 +3,7 @@ package nodes
 
 case class Parameter(id: BigInt) extends SExpr {
   def updateParam(struct: Struct, updateF: ParameterData => ParameterData): Struct =
-    struct.copy(parameters = struct.parameters + (this -> updateF(struct.parameters(this))))
+    struct.updateParameter(this, updateF)
 
   def addToFunction(struct: Struct, function: FuncDef): Struct =
     function.updateFD(updateParam(struct, (pd) => pd.copy(function = function)),

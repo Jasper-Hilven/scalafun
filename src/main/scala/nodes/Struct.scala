@@ -13,28 +13,79 @@ case class Struct(
                    parameters: Map[Parameter, ParameterData],
                    sexprs: Map[SExpr, SExprData],
                    baseFuncs: Map[BaseFunc, BaseFuncData],
-                   deltaMap: Map[BigInt, Delta]) {
+                   previousStruct: Struct,
+                   delta: Delta) {
 
   def this() = {
-    this(0, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map())
+    this(0, Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), Map(), null, null)
+  }
+
+  //NEXT
+  def increaseNext() = copy(next = this.next + 1)
+
+
+  //DELTA
+  private def addDelta(previous: Struct, delta: Delta) = previous.copy(
+    previousStruct = previous,
+    delta = delta
+  )
+
+  private def addDelta(delta: Delta) = copy(
+    previousStruct = this,
+    delta = delta
+  )
+
+  //NODES
+
+  def updateNode(node: Node, update: NodeData => NodeData): Struct = {
+    val updatedData = update(nodes(node))
+    copy(nodes = nodes + (node -> updatedData))
+      .addDelta(UpdateNode(node, updatedData))
+  }
+
+
+  private def addEmptyNode(id: Node) = {
+    copy(nodes = nodes + (id -> NodeData(null)))
+      .addDelta(CreateNode(id, NodeData(null)))
   }
 
   def getAll() = nodes.keys;
 
-  def increaseNext() = copy(next = this.next + 1)
-
+  //SEXPR
   private def addEmptySExprData(id: SExpr) = {
-    copy(next = next + 1,
-      nodes = nodes + (id -> NodeData(null)),
-      sexprs = sexprs + (id -> SExprData(null, Set(), Set())))
+    val previous = addEmptyNode(id)
+    previous.copy(sexprs = sexprs + (id -> SExprData(null, Set(), Set())))
+      .addDelta(previous, CreateSExpr(id, SExprData(null, Set(), Set())))
   }
 
+  def updateSExpr(sExpr: SExpr, update: SExprData => SExprData): Struct = {
+    val data = update(sexprs(sExpr))
+    copy(sexprs = sexprs + (sExpr -> data))
+      .addDelta(UpdateSExpr(sExpr, data))
+  }
+
+  //SCOPECONTAINER
+  private def addEmptyScopeContainerNoNode(id: ScopeContainer) =
+    copy(scopecontainers = scopecontainers + (id -> ScopeContainerData(Set())))
+      .addDelta(CreateScopeContainer(id, ScopeContainerData(Set())))
+
+  def updateScopeCont(scopeContainer: ScopeContainer, update: ScopeContainerData => ScopeContainerData) = {
+    val updatedData = update(scopecontainers(scopeContainer))
+    copy(scopecontainers = scopecontainers + (scopeContainer -> updatedData))
+      .addDelta(UpdateScopeContainer(scopeContainer, updatedData))
+  }
+
+  //FUNCDEF
   def addEmptyFuncDef(): (Struct, FuncDef) = {
     val fd = new FuncDef(next)
-    (addEmptySExprData(fd).copy(
-      funcdefs = funcdefs + (fd -> FuncDefData(List(), null)),
-      scopecontainers = scopecontainers + (fd -> ScopeContainerData(Set()))), fd)
+    val previous = increaseNext()
+      .addEmptySExprData(fd)
+      .addEmptyScopeContainerNoNode(fd)
+    (previous
+      .copy(funcdefs = funcdefs + (fd -> FuncDefData(List(), null)))
+      .addDelta(previous, CreateFuncDef(fd, FuncDefData(List(), null))), fd)
   }
+
 
   def addFuncDef(parentScope: ScopeContainer, name: String) = {
     val (u0, funcdef) = addFuncDef(parentScope);
@@ -46,9 +97,20 @@ case class Struct(
     (parentScope.addChild(u0, fdef), fdef)
   }
 
+  def updateFuncDef(funcDef: FuncDef, updateF: FuncDefData => FuncDefData) = {
+    val updatedData = updateF(funcdefs(funcDef))
+    copy(funcdefs = funcdefs + (funcDef -> updatedData))
+      .addDelta(UpdateFuncDef(funcDef, updatedData))
+  }
+
+
+  //FUNCCALL
   def addEmptyFunccall(): (Struct, FuncCall) = {
     val fd = new FuncCall(next)
-    (addEmptySExprData(fd).copy(funccalls = funccalls + (fd -> FuncCallData(List()))), fd)
+    val previous = increaseNext().addEmptySExprData(fd)
+    (previous
+      .copy(funccalls = funccalls + (fd -> FuncCallData(List())))
+      .addDelta(previous, CreateFuncCall(fd, FuncCallData(List()))), fd)
   }
 
   def addFuncCall(parentScope: ScopeContainer, function: FuncDef) = {
@@ -57,30 +119,62 @@ case class Struct(
     (funccall.addAsArgument(u1, function), funccall)
   }
 
+  def updateFuncCall(funcCall: FuncCall, updateF: FuncCallData => FuncCallData) = {
+    val updatedData = updateF(funccalls(funcCall))
+    copy(funccalls = funccalls + (funcCall -> updatedData))
+      .addDelta(UpdateFuncCall(funcCall, updatedData))
+  }
+
+  //NAMESPACE
   def addEmptyNamespace(): (Struct, Namespace) = {
     val fd = new Namespace(next)
-    (copy(next = next + 1,
-      scopecontainers = scopecontainers + (fd -> ScopeContainerData(Set())),
-      nodes = nodes + (fd -> NodeData(null)),
-      namespaces = namespaces + (fd -> NamespaceData(Set(), null))
-    ), fd)
+    val previous = increaseNext().addEmptyNode(fd).addEmptyScopeContainerNoNode(fd)
+    (previous
+      .copy(namespaces = namespaces + (fd -> NamespaceData(Set(), null)))
+      .addDelta(previous, CreateNamespace(fd, NamespaceData(Set(), null))), fd)
   }
 
+  def updateNamespace(namespace: Namespace, updateF: NamespaceData => NamespaceData): Struct = {
+    val updatedData = updateF(namespaces(namespace))
+    copy(namespaces = namespaces + (namespace -> updatedData))
+      .addDelta(UpdateNamespace(namespace, updatedData))
+  }
+
+  //PARAMETER
   def addEmptyParameter(): (Struct, Parameter) = {
     val fd = new Parameter(next)
-    (addEmptySExprData(fd).copy(parameters = parameters + (fd -> ParameterData(null))), fd)
+    val previous = increaseNext()
+      .addEmptySExprData(fd)
+    (previous
+      .copy(parameters = parameters + (fd -> ParameterData(null)))
+      .addDelta(previous, CreateParameter(fd, ParameterData(null))), fd)
   }
 
+  def updateParameter(parameter: Parameter, updateF: ParameterData => ParameterData) = {
+    val parameterData = updateF(parameters(parameter))
+    copy(parameters = parameters + (parameter -> parameterData))
+      .addDelta(UpdateParameter(parameter, parameterData))
+  }
+
+  //CONSTANT
   def addConstant(value: ConstantValue): (Struct, Constant) = {
     val fd = new Constant(next)
-    (addEmptySExprData(fd).copy(constants = constants + (fd -> ConstantData(value))), fd)
+    val previous = increaseNext()
+      .addEmptySExprData(fd)
+    (previous
+      .copy(constants = constants + (fd -> ConstantData(value)))
+      .addDelta(previous, CreateConstant(fd, ConstantData(value))), fd)
   }
 
+  //BASEFUNC
   def addBaseFunc(parameters: List[Parameter], types: TypeConstraint) = {
     val bf = new BaseFunc(next)
-    (addEmptySExprData(bf).copy(baseFuncs = baseFuncs + (bf -> BaseFuncData(parameters, types))), bf)
+    val previous = increaseNext()
+      .addEmptySExprData(bf)
+    (previous
+      .copy(baseFuncs = baseFuncs + (bf -> BaseFuncData(parameters, types)))
+      .addDelta(previous, CreateBaseFunc(bf, BaseFuncData(parameters, types))), bf)
   }
-
 }
 
 

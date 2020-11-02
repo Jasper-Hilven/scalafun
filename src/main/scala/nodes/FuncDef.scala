@@ -3,7 +3,7 @@ package nodes
 
 case class FuncDef(id: BigInt) extends SExpr with ScopeContainer {
   def updateFD(struct: Struct, updateF: FuncDefData => FuncDefData) =
-    struct.copy(funcdefs = struct.funcdefs + (this -> updateF(struct.funcdefs(this))))
+    struct.updateFuncDef(this, updateF)
 
   def setResult(struct: Struct, result: SExpr): Struct =
     result.updateSExpr(updateFD(struct, d => d.copy(functionResult = result)),

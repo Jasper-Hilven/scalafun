@@ -21,8 +21,7 @@ case class FuncCall(id: BigInt) extends SExpr {
 
   def getAmountOfArguments(struct: Struct) = struct.funccalls(this).argumentMap.size;
 
-  def updateFC(struct: Struct, updateF: FuncCallData => FuncCallData) =
-    struct.copy(funccalls = struct.funccalls + (this -> updateF(struct.funccalls(this))))
+  def updateFC(struct: Struct, updateF: FuncCallData => FuncCallData) = struct.updateFuncCall(this, updateF)
 
   def getArgumentAt(struct: Struct, index: Int) = struct.funccalls(this).argumentMap(index)
 }
